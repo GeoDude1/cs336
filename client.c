@@ -136,7 +136,7 @@ int main()
     
     char buff[1000] = {0};
     //read_json(&packet_info, "myconfig.json", buff); 
-    packet_setup(packet_info, SOCK_STREAM, &sockfd, &clientaddr);
+    packet_id_setup(packet_id, SOCK_STREAM, &sockfd, &clientaddr);
     if (connect(sockfd, (SA*)&clientaddr, sizeof(clientaddr)) != 0) { 
         printf("connection with the server failed...\n"); 
         exit(0); 
@@ -213,7 +213,7 @@ int main()
 
     sleep(packet_info.in_time);
     bzero(data, packet_info.payload_sz);
-    read_high_entropy_data(&data[16], packet_info.payload_sz-16);
+    high_entropy_data(&data[16], packet_info.payload_sz-16);
     for (int i=0;i<packet_info.num_of_packets;i++){
         packet_id_setup(data, packet_id++);
         if(sendto(fd,data,packet_info.payload_sz,MSG_CONFIRM,(struct sockaddr *) &addr,clientlen)<=0) {
@@ -256,4 +256,4 @@ int main()
     recv(sockfd, buff, 50, 0);
     printf("%s\n",buff); 
 } 
-}
+
