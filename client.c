@@ -127,7 +127,6 @@ void send_train(struct config_file_data* packet_info)
   
 int main() 
 { 
-    int binary;
     char binary[16];
     unsigned int packet_id = 0;
     int sockfd, connfd, val, clientlen; 
@@ -179,7 +178,7 @@ int main()
     memset(&srcaddr, 0, sizeof(srcaddr));
     srcaddr.sin_family = AF_INET;
     srcaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    srcaddr.sin_port = htons(atoi(packet_info.src_prt_udp));
+    srcaddr.sin_port = htons(atoi(packet_id.src_prt_udp));
     val=IP_PMTUDISC_DO;
 
     if (setsockopt(fd, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))<0) {
