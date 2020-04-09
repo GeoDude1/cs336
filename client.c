@@ -173,7 +173,7 @@ int main()
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(packet_id.server_ip);
-    addr.sin_port = htons(atoi(packet_info.dest_prt_udp));
+    addr.sin_port = htons(atoi(packet_id.dest_prt_udp));
 
     memset(&srcaddr, 0, sizeof(srcaddr));
     srcaddr.sin_family = AF_INET;
@@ -256,4 +256,3 @@ int main()
     recv(sockfd, buff, 50, 0);
     printf("%s\n",buff); 
 } 
-
