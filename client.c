@@ -30,8 +30,8 @@ void packet_id_setup (char* bin, unsigned int val) {
     unsigned int val2 = val;
     for(int i = 15; i >= 0 ;i--)
     {
-        bin[i] = (val2 & 0b1) +'0';
-        val2 >>= 1;
+        bin[i] = (copy_of_value & 0b1) +'0';
+        copy_of_value >>= 1;
     }
 }
 
@@ -127,6 +127,7 @@ void send_train(struct config_file_data* packet_info)
   
 int main() 
 { 
+    int binary;
     char binary[16];
     unsigned int packet_id = 0;
     int sockfd, connfd, val, clientlen; 
@@ -136,7 +137,7 @@ int main()
     
     char buff[1000] = {0};
     //read_json(&packet_info, "myconfig.json", buff); 
-    packet_id_setup(packet_id, SOCK_STREAM, &sockfd, &clientaddr);
+    make_packet(packet_id, SOCK_STREAM, &sockfd, &clientaddr);
     if (connect(sockfd, (SA*)&clientaddr, sizeof(clientaddr)) != 0) { 
         printf("connection with the server failed...\n"); 
         exit(0); 
@@ -172,7 +173,7 @@ int main()
 
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr(packet_info.server_ip);
+    addr.sin_addr.s_addr = inet_addr(packet_id.server_ip);
     addr.sin_port = htons(atoi(packet_info.dest_prt_udp));
 
     memset(&srcaddr, 0, sizeof(srcaddr));
@@ -213,7 +214,7 @@ int main()
 
     sleep(packet_info.in_time);
     bzero(data, packet_info.payload_sz);
-    high_entropy_data(&data[16], packet_info.payload_sz-16);
+    high_entropy_packet(&data[16], packet_info.payload_sz-16);
     for (int i=0;i<packet_info.num_of_packets;i++){
         packet_id_setup(data, packet_id++);
         if(sendto(fd,data,packet_info.payload_sz,MSG_CONFIRM,(struct sockaddr *) &addr,clientlen)<=0) {
