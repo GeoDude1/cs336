@@ -1,3 +1,4 @@
+
 #include<stdio.h>
 #include<json-c/json.h>
 
@@ -17,9 +18,9 @@ int main(int argc, char **argv) {
 	struct json_object *Number_UDP_Packets;
 	struct json_object *TTL_UDP_Packets;
 
-	fp = fopen("myconfig.json". "r"); //opens file
+	fp = fopen("myconfig.json","r"); //opens file
 	fread(buffer, 1024, 1, fp); //reads files and puts contents inside buffer
-	fclose(p);
+	fclose(fp);
 
 	parsed_json = json_tokener_parse(buffer); //parse json file's contents and convert them into a json object
 
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
 	json_object_object_get_ex(parsed_json, "Destination_Port_Number_TCP_Tail", &Destination_Port_Number_TCP_Tail);
 	json_object_object_get_ex(parsed_json, "Port_Number_TCP", &Port_Number_TCP);
 	json_object_object_get_ex(parsed_json, "Size_UDP_Payload", &Size_UDP_Payload);
-	json_object_object_get_ex(parsed_json, "Inter_Measurement_Time", Inter_Measurement_Time);
+	json_object_object_get_ex(parsed_json, "Inter_Measurement_Time", &Inter_Measurement_Time);
 	json_object_object_get_ex(parsed_json, "Number_UDP_Packets", &Number_UDP_Packets);
 	json_object_object_get_ex(parsed_json, "TTL_UDP_Packets", &TTL_UDP_Packets);
 
