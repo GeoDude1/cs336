@@ -1,52 +1,67 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
-#include <json/json.h>
-#include <sys/types.h>
+#include <unistd.h>
+#include <sys/types.h> 
 #include <sys/socket.h>
-#include <arpa/inet.h>
-int main()
+#include <netinet/in.h>
+#include <ctype.h>
+
+
+void error(const char *msg)
 {
-   int listenfd = 0, connfd = 0;    //related with the server
-   struct sockaddr_in servaddr;
+    perror(msg);
+    exit(1);
+}
 
-   //json_object * jobj;
-   uint8_t buf[158], i;
-
-   memset(&buf, '0', sizeof(buf));
-   listenfd = socket(AF_INET, SOCK_STREAM, 0);
-
-   servaddr.sin_family = AF_INET;
-   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-   servaddr.sin_port = htons(8888); 
-
-   bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
-   printf("binding\n");
-
-   listen(listenfd, 5);
-   printf("listening\n");
-   connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
-
-   printf("Reading from client\n");
-
-   ssize_t r;
-
-   char buff[MAX_SIZE];
-
-   for (;;)
-   {
-      r = read(connfd, buff, MAX_SIZE);
-
-   if (r == -1)
-   {
-   perror("read");
-   return EXIT_FAILURE;
-   }
-   if (r == 0)
-   break;
-   printf("READ: %s\n", buff);
-   }
-   return EXIT_SUCCESS;
+int main(int argc, char *argv[])
+{
+     int sockfd, newsockfd, portno;
+     socklen_t clilen;
+     char buffer[512];
+     struct sockaddr_in serv_addr, cli_addr;
+     int n;
+     if (argc < 2) {
+         fprintf(stderr,"ERROR, no port provided\n");
+         exit(1);
+     }
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     portno = atoi(argv[1]);
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(portno);
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0) 
+              error("ERROR on binding");
+     listen(sockfd,5);
+     clilen = sizeof(cli_addr);
+     newsockfd = accept(sockfd, 
+                 (struct sockaddr *) &cli_addr, 
+                 &clilen);
+     if (newsockfd < 0) 
+          error("ERROR on accept");
+          
+          
+          
+          FILE *fp;
+         int ch = 0;
+            fp = fopen("glad_receive.txt","a");            
+            int words;
+		read(newsockfd, &words, sizeof(int));
+            //printf("Passed integer is : %d\n" , words);      //Ignore , Line for Testing
+          while(ch != words)
+       	   {
+        	 read(newsockfd , buffer , 512); 
+	   	 fprintf(fp , " %s" , buffer);   
+		 //printf(" %s %d "  , buffer , ch); //Line for Testing , Ignore
+		 ch++;
+	   }
+     	printf("The file was received successfully\n");
+	   printf("The new file created is glad5.txt");
+     close(newsockfd);
+     close(sockfd);
+     return 0; 
 }
