@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <ctype.h>
+#include <json-c/json.h>
 
 
 void error(const char *msg)
@@ -58,7 +59,6 @@ int main(int argc, char *argv[])
           
           
           
-          FILE *fp;
          int ch = 0;
             fp = fopen("myconfig.json","r"); 
             fread(buffer, 1024, 1, fp); //reads files and puts contents inside buffer
