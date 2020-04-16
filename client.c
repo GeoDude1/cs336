@@ -33,6 +33,7 @@ void sentFile(int sockfd)
 } 
 
 void parse(int sockfd) {
+	char buff[MAX];
 	struct json_object *parsed_json; //structure that holds parsed JSON
   //stores rest of fields of the JSON file
   struct json_object *Server_IP_Address;
@@ -45,11 +46,9 @@ void parse(int sockfd) {
   struct json_object *Number_UDP_Packets;
   struct json_object *TTL_UDP_Packets;
 
-  fp = fopen("myconfig.json","r"); //opens file
-  fread(buffer, 1024, 1, fp); //reads files and puts contents inside buffer
-  fclose(fp);
-
-  parsed_json = json_tokener_parse(buffer); //parse json file's contents and convert them into a json object
+  FILE *fp=fopen("myconfig.json","r");
+  fread(buff, 1024, 1, fp); //reads files and puts contents inside buffer
+  parsed_json = json_tokener_parse(buff); //parse json file's contents and convert them into a json object
 
   json_object_object_get_ex(parsed_json, "Server_IP_Address", &Server_IP_Address);
   json_object_object_get_ex(parsed_json, "Source_Port_Number_UDP", &Source_Port_Number_UDP);
@@ -105,7 +104,7 @@ int main(int argc, char *argv[])
 
 	// function for sending File 
 	sentFile(sockfd); 
-	parse(int sockfd);
+	parse(sockfd);
 
 	// close the socket 
 	close(sockfd); 
