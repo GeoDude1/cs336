@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
 	// assign IP, PORT 
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = inet_addr("10.0.0.249");
+	serv_addr.sin_addr.s_addr = inet_addr("10.0.0.218");
 	serv_addr.sin_port = htons(8765);
 
 	// Binding newly created socket to given IP and verification 
