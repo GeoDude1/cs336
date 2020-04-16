@@ -8,14 +8,15 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <json-c/json.h>
-
+#define MAX 100
+#define SA struct sockaddr 
 
 void sentFile(int sockfd) 
 { 
 	char buff[MAX]; 						// for read operation from file and used to sent operation 
 	
 	// create file 
-	FILE *fp = fopen(argv[1], "r");		// open file uses both stdio and stdin header files
+	FILE *fp=fopen("myconfig.json","r");	// open file uses both stdio and stdin header files
 											// file should be present at the program directory
 
 	if( fp == NULL ){
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
 	} 
 	else
 		printf("connected to the server..\n"); 
+	FILE *fp = fopen(argv[1], "r");
 
 	// function for sending File 
 	recvFile(sockfd); 
