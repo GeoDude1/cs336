@@ -8,13 +8,14 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <json-c/json.h>
+#define MAX 100
+#define SA struct sockaddr 
 
 void recvFile(int sockfd) 
 { 
 	char buff[MAX]; 	// to store message from client
 	
-	FILE *fp;
-	FILE *fp = fopen(argv[1], "w"); // stores the file content in recieved.txt in the program directory
+	FILE *fp=fopen("myconfig.json","w");
 	
 	if( fp == NULL ){
 		printf("Error IN Opening File ");
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
 	} 
 	else
 		printf("Server listening..\n"); 
+	FILE *fp = fopen(argv[1], "w");
 	
 	len = sizeof(cli); 
 
@@ -81,7 +83,7 @@ int main(int argc, char *argv[])
 		printf("server acccept the client...\n"); 
 
 	// Function for chatting between client and server 
-	sentFile(connfd); 
+	recvFile(connfd); 
 
 	// After transfer close the socket 
 	close(sockfd); 
