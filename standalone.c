@@ -11,11 +11,11 @@
 #include <time.h> 
 #include <ctype.h>
 #include <json-c/json.h>
+#include <pcap.h>
 
-#include "read_json.h"
-#include "allocations.h"
-#include "packet_setup.h"
-#include "signal.h"
+#include "allocations.c"
+#include "packet_setup.c"
+#include "signal.c"
 
 #define BUF_SIZE 2000
 
@@ -59,7 +59,7 @@ int
 main(int argc, char **argv)
 {
     FILE * fp;
-    char buffer[BUF_SIZE],
+    char buffer[BUF_SIZE];
     struct sockaddr_in server_address, client_address;
     struct json_object *parsed_json, *Server_IP_Address, *Source_Port_Number_UDP, *Destination_Port_Number_UDP,
     *Destination_Port_Number_TCP_Head, *Destination_Port_Number_TCP_Tail, *Port_Number_TCP, 
@@ -111,15 +111,7 @@ main(int argc, char **argv)
     }
     unsigned int packet_id = 0;
     //read JSON file to obtain data (TTL will be our main variable)
-    while (*json_object_get_string(Server_IP_Address) == ' ')
-    {
-        json_object_get_string(Server_IP_Address)++;
-    }
-
-    if (argc == 3)
-    {
-        json_object_get_int(TTL_UDP_Packets) = atoi(argv[2]);
-    }
+    
 
     pid_t child = fork();
 
@@ -137,7 +129,7 @@ main(int argc, char **argv)
         struct bpf_program filter;
 
         char filter_exp[1000] = {0};
-        sprintf(filter_exp, "(dst %s) && (src 192.168.86.211) && (tcp[tcpflags] & (tcp-rst) != 0) && ((port %d) || (port %d))", 
+        sprintf(filter_exp, "(dst %s) && (src 10.0.0.249) && (tcp[tcpflags] & (tcp-rst) != 0) && ((port %d) || (port %d))", 
         json_object_get_string(Server_IP_Address), json_object_get_int(Destination_Port_Number_TCP_Head), json_object_get_int(Destination_Port_Number_TCP_Tail));
        
         bpf_u_int32 subnet_mask, ip;
@@ -209,7 +201,7 @@ main(int argc, char **argv)
         close (sd);
 
         // Source IPv4 address: you need to fill this out
-        strcpy (src_ip, "192.168.86.211");
+        strcpy (src_ip, "10.0.0.249");
 
         // Destination URL or IPv4 address: you need to fill this out
         strcpy (target, json_object_get_string(Server_IP_Address));
@@ -297,7 +289,7 @@ main(int argc, char **argv)
         tcphdr.th_sport = htons (8080);
 
         // Destination port number (16 bits)
-        tcphdr.th_dport = htons (atoi(json_object_get_int(Destination_Port_Number_TCP_Head)));
+        tcphdr.th_dport = htons (json_object_get_int(Destination_Port_Number_TCP_Head));
 
         // Sequence number (32 bits)
         tcphdr.th_seq = htonl (0);
@@ -360,7 +352,7 @@ main(int argc, char **argv)
         // Next part of packet is upper layer protocol header.
         memcpy ((tcp_pkt_hd + IP4_HDRLEN), &tcphdr, TCP_HDRLEN * sizeof (uint8_t));
 
-        tcphdr.th_dport = htons (atoi(json_object_get_int(Destination_Port_Number_TCP_Tail)));
+        tcphdr.th_dport = htons (json_object_get_int(Destination_Port_Number_TCP_Tail));
 
         // TCP checksum (16 bits)
         tcphdr.th_sum = tcp4_checksum (iphdr, tcphdr);
