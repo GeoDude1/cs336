@@ -12,55 +12,16 @@
 #include <ctype.h>
 #include <json-c/json.h>
 #include <pcap.h>
-#include <linux/if_ether.h>
-#include <netinet/tcp.h>  // struct tcphdr
-#include <netinet/udp.h>  // struct tcphdr
+#include <netinet/tcp.h> 
+#include <netinet/udp.h>
 #include <sys/ioctl.h> 
 #include <netinet/ip.h>
-#include <linux/if_packet.h>
 #include <net/if.h>
 #include <sys/wait.h>
 
-#define _ALLOC_H_
-#define _PKT_STP_H_
-#define _SIG_H_
-
 #define BUF_SIZE 2000
 
-enum{THRESH=100, UDP_HDRLEN=8, ICMP_HDRLEN=8, TCP_HDRLEN=20, IP4_HDRLEN=20, TCP_FLAG_LEN=8};
-
-int times_index = 0;
-time_t times[4] = {0}; 
-
-void 
-my_packet_handler(u_char *args, const struct pcap_pkthdr *packet_header, const u_char *packet_body)
-{
-
-    time_t t = packet_header->ts.tv_sec;
-    times[times_index++] = t;
-
-    if (times_index == 4)
-    {
-        double low_entropy = (((double)times[1]) - ((double)times[0]));
-        double high_entropy = (((double)times[3]) - ((double)times[2]));
-
-        low_entropy *= 100;
-        high_entropy *= 100;
-
-        if ((high_entropy - low_entropy) > THRESH)
-        {
-            printf("COMPRESSION DETECTED\n");
-        }
-        else
-        {
-            printf("COMPRESSION NOT DETECTED\n");
-        }
-
-        exit(EXIT_SUCCESS);
-    }
-    
-    return; 
-}
+enum{UDP_HDRLEN=8, ICMP_HDRLEN=8, TCP_HDRLEN=20, IP4_HDRLEN=20};
 
 char * 
 allocate_strmem(int len)
@@ -512,8 +473,6 @@ main(int argc, char **argv)
             return 2;
         }
 
-        pcap_loop(handle, 0, my_packet_handler, NULL);
-
         pcap_close(handle);
     }
     else
@@ -851,7 +810,7 @@ main(int argc, char **argv)
             exit (EXIT_FAILURE);
         }
 
-        printf("Parent finished sending all packets\n");
+        printf("Success: All required packets have been sent!\n");
 
         int exit_status;
         waitpid(child, &exit_status, 0);
@@ -859,17 +818,6 @@ main(int argc, char **argv)
         // Close socket descriptor.
         close (sd);
         // Free allocated memory.
-        free (tcp_pkt_hd);
-        free (tcp_pkt_tl);
-        free (udp_pkt);
-        free (udp_pkt_2);
-        free (data);
-        free (interface);
-        free (target);
-        free (src_ip);
-        free (dst_ip);
-        free (ip_flags);
-        free (tcp_flags);
         return (EXIT_SUCCESS);
     }
 }
