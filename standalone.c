@@ -23,7 +23,7 @@
 
 #define _ALLOC_H_
 #define _PKT_STP_H_
-#include "signal.c"
+#define _SIG_H_
 
 #define BUF_SIZE 2000
 
@@ -320,6 +320,12 @@ tcp4_checksum (struct ip iphdr, struct tcphdr tcphdr)
     return checksum ((uint16_t *) buf, chksumlen);
 }
 
+void 
+sigalarm_handler(int signo)
+{
+    printf("Program ran too long. Please wait a bit before rerunning. Shutting down...\n");
+    exit(EXIT_FAILURE);
+}
 
 /**
  * UDP checksum setup function
