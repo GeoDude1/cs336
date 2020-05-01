@@ -103,13 +103,6 @@ uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload, 
     ptr += payloadlen;
     chksumlen += payloadlen;
 
-    // Pad to the next 16-bit boundary
-    for (i=0; i<payloadlen%2; i++, ptr++) {
-        *ptr = 0;
-        ptr++;
-        chksumlen++;
-    }
-
     return checksum ((uint16_t *) buf, chksumlen);
 }
 
@@ -185,18 +178,6 @@ uint16_t tcp4_checksum (struct ip iphdr, struct tcphdr tcphdr)
     memcpy (ptr, &tcphdr.th_win, sizeof (tcphdr.th_win));
     ptr += sizeof (tcphdr.th_win);
     chksumlen += sizeof (tcphdr.th_win);
-
-    // Copy TCP checksum to buf (16 bits)
-    // Zero, since we don't know it yet
-    *ptr = 0; ptr++;
-    *ptr = 0; ptr++;
-    chksumlen += 2;
-
-    // Copy urgent pointer to buf (16 bits)
-    memcpy (ptr, &tcphdr.th_urp, sizeof (tcphdr.th_urp));
-    ptr += sizeof (tcphdr.th_urp);
-    chksumlen += sizeof (tcphdr.th_urp);
-
     return checksum ((uint16_t *) buf, chksumlen);
 }
 
