@@ -248,17 +248,6 @@ int * allocate_intmem(int len)
     }
 }
 
-//this function creates a unique id for each packet
-void packet_id_setup (char* bin, unsigned int val)
-{
-    unsigned int copy_of_value = val;
-    for(int i = 15; i >= 0 ;i--)
-    {
-        bin[i] = (copy_of_value & 0b1) +'0';
-        copy_of_value >>= 1;
-    }
-}
-
 int main(int argc, char **argv)
 {
     FILE * fp;
@@ -299,61 +288,13 @@ int main(int argc, char **argv)
     json_object_object_get_ex(parsed_json, "Number_UDP_Packets", &Number_UDP_Packets);
     json_object_object_get_ex(parsed_json, "TTL_UDP_Packets", &TTL_UDP_Packets);
     printf("Parsing Successful\n");
-
-    int bytes;
-
+    
     if (argc < 2 || argc > 3)
     {
         fprintf (stderr, "ERROR: Too few or many arguments.\n");
         exit (EXIT_FAILURE);
     }
-    unsigned int packet_id = 0;
 
-    
-    pid_t child = fork();
-
-    if (child == -1)
-    {
-        printf("Fork failed exiting...\n");
-        exit(EXIT_FAILURE);
-        return -1;
-    }
-    else if (child == 0)
-    {
-        char dev[] = "eth0";
-        pcap_t *handle;
-        char error_buffer[PCAP_ERRBUF_SIZE];
-        struct bpf_program filter;
-
-        char filter_exp[1000] = {0};
-        sprintf(filter_exp, "(dst %s) && (src 10.0.0.249) && (tcp[tcpflags] & (tcp-rst) != 0) && ((port %d) || (port %d))", 
-        json_object_get_string(Server_IP_Address), json_object_get_int(Destination_Port_Number_TCP_Head), json_object_get_int(Destination_Port_Number_TCP_Tail));
-       
-        bpf_u_int32 subnet_mask, ip;
-
-        if (pcap_lookupnet(dev, &ip, &subnet_mask, error_buffer) == -1) {
-            printf("Could not get information for device: %s\n", dev);
-            ip = 0;
-            subnet_mask = 0;
-        }
-        handle = pcap_open_live(dev, BUFSIZ, 1, 1000, error_buffer);
-        if (handle == NULL) {
-            printf("Could not open %s - %s\n", dev, error_buffer);
-            return 2;
-        }
-        if (pcap_compile(handle, &filter, filter_exp, 0, ip) == -1) {
-            printf("Bad filter - %s\n", pcap_geterr(handle));
-            return 2;
-        }
-        if (pcap_setfilter(handle, &filter) == -1) {
-            printf("Error setting filter - %s\n", pcap_geterr(handle));
-            return 2;
-        }
-
-        pcap_close(handle);
-    }
-    else
-    {
         int i, status, sd, *ip_flags, *tcp_flags;
         const int on = 1;
         char *interface, *target, *src_ip, *dst_ip;
@@ -376,7 +317,7 @@ int main(int argc, char **argv)
         tcp_flags = allocate_intmem (8);
 
         // Interface to send packet through.
-        strcpy (interface, "eth0");
+        strcpy (interface, "enp0s3");
         sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW);
         // Submit request for a socket descriptor to look up interface.
         if (sd < 0) {
@@ -558,10 +499,6 @@ int main(int argc, char **argv)
         // Next part of packet is upper layer protocol header.
         memcpy ((tcp_pkt_tl + IP4_HDRLEN), &tcphdr, TCP_HDRLEN * sizeof (uint8_t));
         
-        // The kernel is going to prepare layer 2 information (ethernet frame header) for us.
-        // For that, we need to specify a destination for the kernel in order for it
-        // to decide where to send the raw datagram. We fill in a struct in_addr with
-        // the desired destination IP address, and pass this structure to the sendto() function.
         memset (&sin, 0, sizeof (struct sockaddr_in));
         sin.sin_family = AF_INET;
         sin.sin_addr.s_addr = iphdr.ip_dst.s_addr;
@@ -646,48 +583,8 @@ int main(int argc, char **argv)
             exit (EXIT_FAILURE);
         }
 
-        for (int i = 0; i < json_object_get_int(Number_UDP_Packets); i++)
-        {
-            packet_id_setup(udp_pkt + IP4_HDRLEN + UDP_HDRLEN, packet_id++);
-            // Send ethernet frame to socket.
-            if ((bytes = sendto (sd, udp_pkt, frame_length, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr))) <= 0) {
-                perror ("sendto() failed");
-                exit (EXIT_FAILURE);
-            }
-        }
-
-        if (sendto (sd, tcp_pkt_tl, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
-            perror ("sendto() failed ");
-            exit (EXIT_FAILURE);
-        }
-
-        sleep(json_object_get_int(Inter_Measurement_Time));
-
-        // Send packet.
-        if (sendto (sd, tcp_pkt_hd, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
-            perror ("sendto() failed ");
-            exit (EXIT_FAILURE);
-        }
-
-        for (int i = 0; i < json_object_get_int(Number_UDP_Packets); i++)
-        {
-            packet_id_setup(udp_pkt_2 + IP4_HDRLEN + UDP_HDRLEN, packet_id++);
-            // Send ethernet frame to socket.
-            if ((bytes = sendto (sd, udp_pkt_2, frame_length, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr))) <= 0) {
-                perror ("sendto() failed");
-                exit (EXIT_FAILURE);
-            }
-        }
-
-        if (sendto (sd, tcp_pkt_tl, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
-            perror ("sendto() failed ");
-            exit (EXIT_FAILURE);
-        }
-
         printf("Success: All required packets have been sent!\n");
 
         close (sd);
-        // Free allocated memory.
         return (EXIT_SUCCESS);
     }
-}
