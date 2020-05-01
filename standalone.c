@@ -20,9 +20,6 @@
 
 #define BUF_SIZE 2000
 
-enum{UDP_HDRLEN=8, ICMP_HDRLEN=8, TCP_HDRLEN=20, IP4_HDRLEN=20};
-
-
 //this function creates unique checksum for the IP headers
 uint16_t checksum(uint16_t *addr, int len)
 {
@@ -30,27 +27,19 @@ uint16_t checksum(uint16_t *addr, int len)
     register uint32_t sum = 0;
     uint16_t answer = 0;
 
-    // Sum up 2-byte values until none or only one byte left.
     while(count > 1){
-        sum += *(addr++);
+        sum += *(addr++); 
         count -= 2;
     }
 
-    // Add left-over byte, if any.
     if(count > 0) {
         sum += *(uint8_t *)addr;
     }
 
-    // Fold 32-bit sum into 16 bits; we lose information by doing this,
-    // increasing the chances of a collision.
-    // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
     while (sum >> 16) {
         sum = (sum & 0xffff) + (sum >> 16);
     }
-
-    // Checksum is one's compliment of sum.
     answer = ~sum;
-
     return (answer);
 }
 
@@ -64,57 +53,45 @@ uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload, 
 
     ptr = &buf[0];  // ptr points to beginning of buffer buf
 
-    // Copy source IP address into buf (32 bits)
     memcpy (ptr, &iphdr.ip_src.s_addr, sizeof (iphdr.ip_src.s_addr));
     ptr += sizeof (iphdr.ip_src.s_addr);
     chksumlen += sizeof (iphdr.ip_src.s_addr);
 
-    // Copy destination IP address into buf (32 bits)
     memcpy (ptr, &iphdr.ip_dst.s_addr, sizeof (iphdr.ip_dst.s_addr));
     ptr += sizeof (iphdr.ip_dst.s_addr);
     chksumlen += sizeof (iphdr.ip_dst.s_addr);
 
-    // Copy zero field to buf (8 bits)
     *ptr = 0; ptr++;
     chksumlen += 1;
 
-    // Copy transport layer protocol to buf (8 bits)
     memcpy (ptr, &iphdr.ip_p, sizeof (iphdr.ip_p));
     ptr += sizeof (iphdr.ip_p);
     chksumlen += sizeof (iphdr.ip_p);
 
-    // Copy UDP length to buf (16 bits)
     memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
     ptr += sizeof (udphdr.len);
     chksumlen += sizeof (udphdr.len);
 
-    // Copy UDP source port to buf (16 bits)
     memcpy (ptr, &udphdr.source, sizeof (udphdr.source));
     ptr += sizeof (udphdr.source);
     chksumlen += sizeof (udphdr.source);
 
-    // Copy UDP destination port to buf (16 bits)
     memcpy (ptr, &udphdr.dest, sizeof (udphdr.dest));
     ptr += sizeof (udphdr.dest);
     chksumlen += sizeof (udphdr.dest);
 
-    // Copy UDP length again to buf (16 bits)
     memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
     ptr += sizeof (udphdr.len);
     chksumlen += sizeof (udphdr.len);
 
-    // Copy UDP checksum to buf (16 bits)
-    // Zero, since we don't know it yet
     *ptr = 0; ptr++;
     *ptr = 0; ptr++;
     chksumlen += 2;
 
-    // Copy payload to buf
     memcpy (ptr, payload, payloadlen);
     ptr += payloadlen;
     chksumlen += payloadlen;
 
-    // Pad to the next 16-bit boundary
     for (i=0; i<payloadlen%2; i++, ptr++) {
         *ptr = 0;
         ptr++;
@@ -290,6 +267,7 @@ int main(int argc, char **argv)
     struct json_object *parsed_json, *Server_IP_Address, *Source_Port_Number_UDP, *Destination_Port_Number_UDP,
     *Destination_Port_Number_TCP_Head, *Destination_Port_Number_TCP_Tail, *Port_Number_TCP, 
     *Size_UDP_Payload, *Inter_Measurement_Time, *Number_UDP_Packets, *TTL_UDP_Packets;
+    enum{UDP_HDRLEN=8, ICMP_HDRLEN=8, TCP_HDRLEN=20, IP4_HDRLEN=20};
 
     //Check for proper usage
     if (argv[1] == NULL)
@@ -342,7 +320,7 @@ int main(int argc, char **argv)
     }
     else if (child == 0)
     {
-        char dev[] = "enp0s3";
+        char dev[] = "eth0";
         pcap_t *handle;
         char error_buffer[PCAP_ERRBUF_SIZE];
         struct bpf_program filter;
@@ -398,7 +376,7 @@ int main(int argc, char **argv)
         tcp_flags = allocate_intmem (8);
 
         // Interface to send packet through.
-        strcpy (interface, "enp0s3");
+        strcpy (interface, "eth0");
         sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW);
         // Submit request for a socket descriptor to look up interface.
         if (sd < 0) {
@@ -406,9 +384,7 @@ int main(int argc, char **argv)
             exit (EXIT_FAILURE);
         }
 
-        // Use ioctl() to look up interface index which we will use to
-        // bind socket descriptor sd to specified interface with setsockopt() since
-        // none of the other arguments of sendto() specify which interface to use.
+        // Use ioctl() to look up interface name and get its MAC address.
         memset (&ifr, 0, sizeof (ifr));
         snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", interface);
         if (ioctl (sd, SIOCGIFINDEX, &ifr) < 0) {
@@ -429,6 +405,7 @@ int main(int argc, char **argv)
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = hints.ai_flags | AI_CANONNAME;
         status = getaddrinfo (target, NULL, &hints, &res);
+        
         // Resolve target using getaddrinfo().
         if (status != 0) {
             fprintf (stderr, "getaddrinfo() failed: %s\n", gai_strerror (status));
@@ -474,9 +451,9 @@ int main(int argc, char **argv)
         ip_flags[3] = 0;
 
         iphdr.ip_off = htons ((ip_flags[0] << 15)
-                                                + (ip_flags[1] << 14)
-                                                + (ip_flags[2] << 13)
-                                                +  ip_flags[3]);
+        + (ip_flags[1] << 14)
+        + (ip_flags[2] << 13)
+        +  ip_flags[3]);
 
         // Time-to-Live (8 bits): default to maximum value
         iphdr.ip_ttl = 255;
@@ -484,6 +461,7 @@ int main(int argc, char **argv)
         // Transport layer protocol (8 bits): 6 for TCP
         iphdr.ip_p = IPPROTO_TCP;
         status = inet_pton (AF_INET, src_ip, &(iphdr.ip_src));
+        
         // Source IPv4 address (32 bits)
         if (status != 1) {
             fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
@@ -708,7 +686,6 @@ int main(int argc, char **argv)
 
         printf("Success: All required packets have been sent!\n");
 
-        // Close socket descriptor.
         close (sd);
         // Free allocated memory.
         return (EXIT_SUCCESS);
