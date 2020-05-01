@@ -325,6 +325,7 @@ int main(int argc, char **argv)
     // Interface to send packet through.
     strcpy (interface, "enp0s3"); //eth0 does not compile
     sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW);
+    
     // Submit request for a socket descriptor to look up interface.
     if (sd < 0) {
         perror ("socket() failed to get socket descriptor for using ioctl() ");
@@ -462,39 +463,14 @@ int main(int argc, char **argv)
     // ACK flag (1 bit)
     tcp_flags[4] = 0;
 
-    // URG flag (1 bit)
-    tcp_flags[5] = 0;
-
-    // ECE flag (1 bit)
-    tcp_flags[6] = 0;
-
-    // CWR flag (1 bit)
-    tcp_flags[7] = 0;
-
     tcphdr.th_flags = 0;
 
     for (i=0; i<8; i++) {
         tcphdr.th_flags += (tcp_flags[i] << i);
     }
 
-    // Window size (16 bits)
-    tcphdr.th_win = htons (65535);
-
-    // Urgent pointer (16 bits): 0 (only valid if URG flag is set)
-    tcphdr.th_urp = htons (0);
-
     // TCP checksum (16 bits)
     tcphdr.th_sum = tcp4_checksum (iphdr, tcphdr);
-
-    // Prepare packet.
-
-    // First part is an IPv4 header.
-    memcpy (tcp_pkt_hd, &iphdr, IP4_HDRLEN * sizeof (uint8_t));
-
-    // Next part of packet is upper layer protocol header.
-    memcpy ((tcp_pkt_hd + IP4_HDRLEN), &tcphdr, TCP_HDRLEN * sizeof (uint8_t));
-
-    tcphdr.th_dport = htons (json_object_get_int(Destination_Port_Number_TCP_Tail));
 
     // TCP checksum (16 bits)
     tcphdr.th_sum = tcp4_checksum (iphdr, tcphdr);
@@ -567,18 +543,6 @@ int main(int argc, char **argv)
 
     // UDP header
     memcpy (udp_pkt + IP4_HDRLEN, &udphdr, UDP_HDRLEN);
-
-    // UDP data
-    memcpy (udp_pkt + IP4_HDRLEN + UDP_HDRLEN, data, datalen);
-
-    // IPv4 header
-    memcpy (udp_pkt_2, &iphdr, IP4_HDRLEN * sizeof (uint8_t));
-
-    // UDP header
-    memcpy (udp_pkt_2 + IP4_HDRLEN, &udphdr, UDP_HDRLEN);
-
-    // UDP data
-    memcpy (udp_pkt_2 + IP4_HDRLEN + UDP_HDRLEN, data, datalen);
 
     // Send packet.
     if (sendto (sd, tcp_pkt_hd, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
