@@ -384,8 +384,6 @@ int main(int argc, char **argv)
     // ID sequence number (16 bits): unused, since single datagram
     iphdr.ip_id = htons (0);
 
-    // Flags, and Fragmentation offset (3, 13 bits): 0 since single datagram
-
     // Zero (1 bit)
     ip_flags[0] = 0;
 
@@ -440,26 +438,14 @@ int main(int argc, char **argv)
     // Acknowledgement number (32 bits): 0 in first packet of SYN/ACK process
     tcphdr.th_ack = htonl (0);
 
-    // Reserved (4 bits): should be 0
-    tcphdr.th_x2 = 0;
-
-    // Data offset (4 bits): size of TCP header in 32-bit words
-    tcphdr.th_off = TCP_HDRLEN / 4;
-
-    // Flags (8 bits)
-
     // FIN flag (1 bit)
     tcp_flags[0] = 0;
-
     // SYN flag (1 bit): set to 1
     tcp_flags[1] = 1;
-
     // RST flag (1 bit)
     tcp_flags[2] = 1;
-
     // PSH flag (1 bit)
     tcp_flags[3] = 0;
-
     // ACK flag (1 bit)
     tcp_flags[4] = 0;
 
@@ -526,14 +512,10 @@ int main(int argc, char **argv)
 
     // Destination port number (16 bits): pick a number
     udphdr.dest = htons (9999);
-
-    // Length of UDP datagram (16 bits): UDP header + UDP data
     udphdr.len = htons (UDP_HDRLEN + datalen);
 
     // UDP checksum (16 bits)
     udphdr.check = udp4_checksum (iphdr, udphdr, data, datalen);
-
-    // Ethernet frame length = ethernet data (IP header + UDP header + UDP data)
     int frame_length = IP4_HDRLEN + UDP_HDRLEN + datalen;
     udp_pkt = allocate_ustrmem (IP_MAXPACKET);
     udp_pkt_2 = allocate_ustrmem (IP_MAXPACKET);
@@ -544,13 +526,13 @@ int main(int argc, char **argv)
     // UDP header
     memcpy (udp_pkt + IP4_HDRLEN, &udphdr, UDP_HDRLEN);
 
-    // Send packet.
+    // Send ethernet frame to socket.
     if (sendto (sd, tcp_pkt_hd, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
         perror ("sendto() failed ");
         exit (EXIT_FAILURE);
     }
 
-    printf("Success: All required packets have been sent!\n");
+    printf("(Testing) Success: All required packets have been sent!\n");
 
     close (sd);
     return (EXIT_SUCCESS);
