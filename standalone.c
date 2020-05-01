@@ -300,6 +300,9 @@ int main(int argc, char **argv)
     json_object_object_get_ex(parsed_json, "Number_UDP_Packets", &Number_UDP_Packets);
     json_object_object_get_ex(parsed_json, "TTL_UDP_Packets", &TTL_UDP_Packets);
     printf("Parsing Successful\n");
+
+    printf("(Testing) Preparing to send packets!\n");
+    printf("Sending...\n");
     
     int i, status, sd, *ip_flags, *tcp_flags;
     const int on = 1;
@@ -533,7 +536,6 @@ int main(int argc, char **argv)
     }
 
     printf("(Testing) Success: All required packets have been sent!\n");
-
     close (sd);
     return (EXIT_SUCCESS);
 }
